@@ -1,0 +1,229 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&display=swap');
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../js/**/*.vue';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Oswald', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+    --color-emerald-50: #fdf9ec;
+    --color-emerald-100: #faf0ce;
+    --color-emerald-200: #f3dd97;
+    --color-emerald-300: #eec95f;
+    --color-emerald-400: #e8b52c;
+    --color-emerald-500: #f2b90c;
+    --color-emerald-600: #c99609;
+    --color-emerald-700: #9c7508;
+    --color-emerald-800: #6f5407;
+    --color-emerald-900: #453405;
+
+    --color-gold-50: #fdf9ec;
+    --color-gold-100: #faf0ce;
+    --color-gold-200: #f3dd97;
+    --color-gold-300: #eec95f;
+    --color-gold-400: #e8b52c;
+    --color-gold-500: #f2b90c;
+    --color-gold-600: #c99609;
+    --color-gold-700: #9c7508;
+    --color-gold-800: #6f5407;
+    --color-gold-900: #453405;
+
+    --color-dark: #050505;
+    --color-dark-warm: #0d0d0d;
+    --color-dark-grey: #171717;
+    --color-warm-grey: #8a8a8a;
+    --color-off-white: #f5f5f5;
+    --color-text-body: #a8a8a8;
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        @apply bg-dark text-off-white antialiased;
+        font-family: var(--font-sans);
+    }
+
+    ::selection {
+        @apply bg-gold-500/30 text-gold-100;
+    }
+}
+
+@layer utilities {
+    .font-display {
+        font-family: var(--font-display);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    .text-gradient {
+        @apply bg-gradient-to-r from-gold-400 via-gold-300 to-off-white bg-clip-text text-transparent;
+    }
+
+    .text-gradient * {
+        @apply bg-gradient-to-r from-gold-400 via-gold-300 to-off-white bg-clip-text text-transparent;
+    }
+
+    .glow-emerald {
+        box-shadow: 0 0 40px rgba(242, 185, 12, 0.18), 0 0 80px rgba(242, 185, 12, 0.1);
+    }
+
+    /* Swipeable rows without a visible scrollbar */
+    .no-scrollbar {
+        scrollbar-width: none;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .glow-emerald-strong {
+        box-shadow: 0 0 60px rgba(242, 185, 12, 0.35), 0 0 120px rgba(242, 185, 12, 0.15);
+    }
+
+    .shiny-text {
+        background-image: linear-gradient(120deg, currentColor 0%, currentColor 35%, #ffffff 50%, currentColor 65%, currentColor 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: shiny-shimmer 3s linear infinite;
+    }
+
+    @keyframes shiny-shimmer {
+        0% { background-position: 150% center; }
+        100% { background-position: -50% center; }
+    }
+}
+
+/* GSAP SplitText safety net: keep split units in normal inline flow so headings
+   can never collapse/overlap into unreadable text, even mid-animation. */
+.split-parent {
+    max-width: 100%;
+}
+
+/* `class="block"` on a SplitText must win over its base inline-block, so a
+   two-line heading really breaks instead of running the lines together. */
+.split-parent.block {
+    display: block;
+}
+
+.split-word,
+.split-char {
+    display: inline-block;
+    will-change: transform, opacity;
+}
+
+/* Each split unit inside a gradient heading clips its own slice of the gradient. */
+.text-gradient .split-word,
+.text-gradient .split-char {
+    background: linear-gradient(to right, var(--color-gold-400), var(--color-gold-300), var(--color-off-white));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+/* Once a gradient heading is split, only the innermost split units paint the
+   gradient. Every wrapper around them (the heading span, the SplitText root,
+   GSAP's unclassed smartWrap word spans, words that contain chars) must not
+   clip its own gradient to the same glyphs, or the browser draws a second,
+   misplaced copy of the letters on top (ghosting). */
+.text-gradient:has(.split-word, .split-char),
+.text-gradient:has(.split-word, .split-char) :not(.split-word, .split-char),
+.text-gradient .split-word:has(.split-char) {
+    background: none;
+}
+
+/* If the visitor prefers reduced motion, never leave headings hidden. */
+@media (prefers-reduced-motion: reduce) {
+    .split-parent,
+    .split-word,
+    .split-char {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+}
+
+/* Scroll-reveal wrapper (see components/Reveal.vue). */
+.reveal {
+    opacity: 0;
+    transform: translateY(var(--reveal-y, 24px));
+    transition:
+        opacity var(--reveal-duration, 700ms) cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms),
+        transform var(--reveal-duration, 700ms) cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+}
+
+.reveal--in {
+    opacity: 1;
+    transform: none;
+}
+
+/* Page transition: the main content eases in on every navigation. */
+.page-enter {
+    animation: page-fade-in 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes page-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+        transition: none !important;
+    }
+
+    .page-enter {
+        animation: none !important;
+    }
+}
+
+/* ---------- Client portal / coach admin ---------- */
+@layer components {
+    .p-card {
+        @apply bg-dark-grey/70 border border-white/5 rounded-2xl;
+    }
+
+    .p-eyebrow {
+        @apply text-[11px] uppercase tracking-[0.25em] font-semibold text-warm-grey;
+    }
+
+    .p-label {
+        @apply block text-sm text-text-body mb-2;
+    }
+
+    .p-input {
+        @apply w-full px-4 py-3 bg-dark/60 border border-white/10 rounded-xl text-off-white placeholder-warm-grey transition-colors;
+        @apply focus:border-gold-500/60 focus:outline-none focus:ring-2 focus:ring-gold-500/20;
+        color-scheme: dark;
+    }
+
+    .p-btn {
+        @apply inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-black text-sm font-bold tracking-wide transition-all duration-300;
+        @apply hover:from-gold-400 hover:to-gold-500 disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+
+    .p-btn-ghost {
+        @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/10 text-sm font-semibold text-off-white transition-colors;
+        @apply hover:border-gold-500/40 hover:text-gold-300 disabled:opacity-50 disabled:cursor-not-allowed;
+    }
+
+    .p-error {
+        @apply text-red-400 text-sm mt-2;
+    }
+}
