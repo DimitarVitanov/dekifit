@@ -9,7 +9,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, useTemplateRef, nextTick, type CSSProperties } from 'vue';
 import { Renderer, Mesh, Triangle } from 'ogl';
-import { ParallelProgram, afterPaint, isSoftwareRenderer, watchVisibility, whenSettledAndVisible } from '@/lib/webgl';
+import { ParallelProgram, afterPaint, hardwareCanvas, onceNear, watchVisibility } from '@/lib/webgl';
 
 interface LightfallProps {
   className?: string;
@@ -278,26 +278,19 @@ const setupWebGL = async (): Promise<void> => {
 
   const container = containerRef.value;
 
+  // GPU only (see lib/webgl.js): drawn on the CPU this raymarching shader freezes the page for
+  // seconds, so without a GPU the plain dark background stays. Every device with a GPU animates.
+  // A single full-screen triangle has no visible edges, so MSAA (antialias) only cost GPU time.
+  const glCanvas = hardwareCanvas({ alpha: true, antialias: false });
+  if (!glCanvas) return;
   const renderer = new Renderer({
+    canvas: glCanvas,
     dpr: props.dpr ?? (typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1),
     alpha: true,
-    // A single full-screen triangle has no visible edges, so MSAA only cost GPU time.
     antialias: false
   });
   rendererRef.value = renderer;
   const gl = renderer.gl;
-  // No GPU: draw one still frame instead of animating (see lib/webgl.js). Without a GPU there's
-  // also no background compiling, and this shader would freeze the page for seconds, so wait
-  // until the page has loaded and settled, and the background is actually on screen.
-  const still = isSoftwareRenderer(gl);
-  if (still) {
-    renderer.dpr = 1;
-    await whenSettledAndVisible(container);
-    if (current !== generation) {
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
-      return;
-    }
-  }
   const canvas = gl.canvas as HTMLCanvasElement;
   canvas.style.width = '100%';
   canvas.style.height = '100%';
@@ -367,8 +360,6 @@ const setupWebGL = async (): Promise<void> => {
     const rect = container.getBoundingClientRect();
     renderer.setSize(rect.width, rect.height);
     uniforms.iResolution.value = [gl.drawingBufferWidth, gl.drawingBufferHeight, 1];
-    // Resizing clears the canvas, and a still frame has no loop to repaint it.
-    if (still) draw();
   };
 
   resize();
@@ -410,21 +401,15 @@ const setupWebGL = async (): Promise<void> => {
   };
 
   // Animate only while on (or near) screen and the tab is visible.
-  let stopWatching = (): void => {};
-  if (still) {
-    uniforms.iTime.value = performance.now() * 0.001;
-    draw();
-  } else {
-    stopWatching = watchVisibility(container, (visible: boolean) => {
-      if (visible && rafRef.value === null) {
-        rafRef.value = requestAnimationFrame(loop);
-      } else if (!visible && rafRef.value !== null) {
-        cancelAnimationFrame(rafRef.value);
-        rafRef.value = null;
-        lastTime = 0;
-      }
-    });
-  }
+  const stopWatching = watchVisibility(container, (visible: boolean) => {
+    if (visible && rafRef.value === null) {
+      rafRef.value = requestAnimationFrame(loop);
+    } else if (!visible && rafRef.value !== null) {
+      cancelAnimationFrame(rafRef.value);
+      rafRef.value = null;
+      lastTime = 0;
+    }
+  });
 
   cleanupRef.value = (): void => {
     stopWatching();
@@ -462,10 +447,13 @@ const teardown = (): void => {
   }
 };
 
-// Set up after the first paint so compiling the shader never holds back the page's text.
+// Set up after the first paint, and only once near the screen, so compiling the shader never
+// holds back the page's text and backgrounds further down wait until they're needed.
 let cancelSetup = (): void => {};
 onMounted(() => {
-  cancelSetup = afterPaint(setupWebGL);
+  cancelSetup = afterPaint(() => {
+    if (containerRef.value) cancelSetup = onceNear(containerRef.value, setupWebGL);
+  });
 });
 
 onUnmounted(() => {

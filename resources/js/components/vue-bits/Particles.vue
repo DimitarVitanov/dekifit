@@ -5,7 +5,7 @@
 <script setup lang="ts">
 import { Camera, Geometry, Mesh, Program, Renderer } from 'ogl';
 import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
-import { isSoftwareRenderer, watchVisibility } from '@/lib/webgl';
+import { hardwareCanvas, onceNear, watchVisibility } from '@/lib/webgl';
 
 interface ParticlesProps {
   particleCount?: number;
@@ -128,7 +128,10 @@ const init = () => {
   const container = containerRef.value;
   if (!container) return;
 
-  const renderer = new Renderer({ dpr: props.pixelRatio, depth: false, alpha: true });
+  // GPU only, like the other WebGL effects (see lib/webgl.js).
+  const canvas = hardwareCanvas({ depth: false, alpha: true });
+  if (!canvas) return;
+  const renderer = new Renderer({ canvas, dpr: props.pixelRatio, depth: false, alpha: true });
   const gl = renderer.gl;
   container.appendChild(gl.canvas);
   gl.clearColor(0, 0, 0, 0);
@@ -228,12 +231,9 @@ const init = () => {
     renderer.render({ scene: particles, camera });
   };
 
-  // Animate only while on (or near) screen and the tab is visible; no GPU: one still frame.
-  const still = isSoftwareRenderer(gl);
+  // Animate only while on (or near) screen and the tab is visible.
   const stopWatching = watchVisibility(container, (visible: boolean) => {
-    if (still) {
-      if (visible) renderer.render({ scene: particles, camera });
-    } else if (visible && !animationFrameId) {
+    if (visible && !animationFrameId) {
       lastTime = performance.now();
       animationFrameId = requestAnimationFrame(update);
     } else if (!visible && animationFrameId) {
@@ -255,11 +255,14 @@ const init = () => {
   };
 };
 
+// Set up WebGL only once the effect comes near the screen (see lib/webgl.js).
+let cancelSetup = (): void => {};
 onMounted(() => {
-  init();
+  if (containerRef.value) cancelSetup = onceNear(containerRef.value, init);
 });
 
 onBeforeUnmount(() => {
+  cancelSetup();
   cleanup?.();
 });
 

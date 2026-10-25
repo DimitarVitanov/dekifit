@@ -3,17 +3,24 @@ import { Program } from 'ogl';
 // Shared by the WebGL backgrounds (Lightfall, Particles, Orb). They look and move exactly as
 // designed; these helpers only stop them blocking the page or burning CPU/GPU unseen.
 
-// True when WebGL is drawn by the CPU instead of a GPU (SwiftShader/llvmpipe): headless Chrome
-// such as Lighthouse/PageSpeed, VMs, blocklisted drivers. Animating a full-screen shader there
-// freezes the page, so those browsers get one still frame instead of a running animation.
-export function isSoftwareRenderer(gl) {
-    try {
-        const info = gl.getExtension('WEBGL_debug_renderer_info');
-        const name = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
-        return /swiftshader|llvmpipe|softpipe|software/i.test(String(name));
-    } catch {
-        return false;
-    }
+// Without a GPU (headless Chrome such as Lighthouse/PageSpeed, VMs, blocklisted drivers) WebGL is
+// drawn on the CPU and a full-screen shader freezes the page for seconds, so the effects stay off
+// there (see hasGpu below). Real phones and computers all have one and animate as designed.
+
+// A canvas with a GPU-backed WebGL context already created (ogl's Renderer picks it up when
+// given the canvas), or null if the browser would only give a CPU one. Defaults match ogl's.
+export function hardwareCanvas({
+    alpha = false,
+    depth = true,
+    stencil = false,
+    antialias = false,
+    premultipliedAlpha = false,
+    preserveDrawingBuffer = false,
+    powerPreference = 'default',
+} = {}) {
+    const canvas = document.createElement('canvas');
+    const attributes = { alpha, depth, stencil, antialias, premultipliedAlpha, preserveDrawingBuffer, powerPreference, failIfMajorPerformanceCaveat: true };
+    return canvas.getContext('webgl2', attributes) || canvas.getContext('webgl', attributes) ? canvas : null;
 }
 
 // Calls onChange(true/false) whenever `el` comes near/leaves the viewport or the tab is
@@ -38,36 +45,86 @@ export function watchVisibility(el, onChange, rootMargin = '150px') {
     };
 }
 
+const SOFTWARE = /swiftshader|llvmpipe|softpipe|software/i;
+let gpuCheck = null;
+
+// Resolves true when WebGL runs on a real GPU. The question is asked from a worker: any WebGL
+// query waits on the GPU process, and when that is software-rendering it stalls for seconds,
+// which must not happen on the page's main thread.
+export function hasGpu() {
+    return (gpuCheck ??= new Promise(resolve => {
+        const onMainThread = () => {
+            try {
+                const gl = document.createElement('canvas').getContext('webgl', { failIfMajorPerformanceCaveat: true });
+                if (!gl) return resolve(false);
+                const info = gl.getExtension('WEBGL_debug_renderer_info');
+                resolve(!SOFTWARE.test(String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER))));
+                gl.getExtension('WEBGL_lose_context')?.loseContext();
+            } catch {
+                resolve(false);
+            }
+        };
+        if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') return onMainThread();
+        // Posts the renderer name, 'software' (only a CPU context), or 'unsupported' (no WebGL in workers).
+        const source = `
+            const canvas = new OffscreenCanvas(1, 1);
+            const gl = canvas.getContext('webgl', { failIfMajorPerformanceCaveat: true });
+            if (gl) {
+                const info = gl.getExtension('WEBGL_debug_renderer_info');
+                postMessage(String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER)));
+                gl.getExtension('WEBGL_lose_context')?.loseContext();
+            } else {
+                postMessage(new OffscreenCanvas(1, 1).getContext('webgl') ? 'software' : 'unsupported');
+            }`;
+        try {
+            const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+            const worker = new Worker(url);
+            const done = () => {
+                worker.terminate();
+                URL.revokeObjectURL(url);
+            };
+            worker.onmessage = ({ data }) => {
+                done();
+                if (data === 'unsupported') onMainThread();
+                else resolve(data !== 'software' && !SOFTWARE.test(data));
+            };
+            worker.onerror = () => {
+                done();
+                onMainThread();
+            };
+        } catch {
+            onMainThread();
+        }
+    }));
+}
+
+// Runs `fn` once, the first time `el` comes within a screen's height of the viewport and only if
+// WebGL runs on a GPU, so effects further down the page don't set up during load and machines
+// without a GPU never start them. Returns a cancel function.
+export function onceNear(el, fn) {
+    let done = false;
+    let cancelled = false;
+    const stop = watchVisibility(el, visible => {
+        if (!visible || done) return;
+        done = true;
+        stop?.();
+        hasGpu().then(gpu => {
+            if (gpu && !cancelled) fn();
+        });
+    }, '100% 0px');
+    if (done) stop();
+    return () => {
+        cancelled = done = true;
+        stop();
+    };
+}
+
 // Runs `fn` after the browser has painted the current frame, so a shader compile never
 // delays the page's first paint.
 export function afterPaint(fn) {
     let cancelled = false;
     requestAnimationFrame(() => setTimeout(() => { if (!cancelled) fn(); }, 0));
     return () => { cancelled = true; };
-}
-
-// Resolves once the page has loaded, `delay` ms have passed and the browser is idle, and `el` is
-// on (or near) screen. For work that would freeze the page, like compiling a big shader without
-// KHR_parallel_shader_compile.
-export function whenSettledAndVisible(el, delay = 3000) {
-    const loaded = document.readyState === 'complete'
-        ? Promise.resolve()
-        : new Promise(resolve => window.addEventListener('load', resolve, { once: true }));
-    const settled = loaded
-        .then(() => new Promise(resolve => setTimeout(resolve, delay)))
-        .then(() => new Promise(resolve => (window.requestIdleCallback ?? setTimeout)(resolve, { timeout: 2000 })));
-    const visible = new Promise(resolve => {
-        let seen = false;
-        const stop = watchVisibility(el, isVisible => {
-            if (isVisible && !seen) {
-                seen = true;
-                resolve();
-                stop?.();
-            }
-        });
-        if (seen) stop();
-    });
-    return Promise.all([settled, visible]);
 }
 
 // An ogl Program that compiles without freezing the page. ogl reads the compile log and link

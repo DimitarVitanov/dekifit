@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Mesh, Program, Renderer, Triangle, Vec3 } from 'ogl';
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
-import { isSoftwareRenderer, watchVisibility } from '@/lib/webgl';
+import { hardwareCanvas, onceNear, watchVisibility } from '@/lib/webgl';
 
 interface OrbProps {
   hue?: number;
@@ -248,7 +248,10 @@ const setupAnimation = () => {
   const container = ctnDom.value;
   if (!container) return;
 
-  const renderer = new Renderer({ alpha: true, premultipliedAlpha: false });
+  // GPU only, like the other WebGL effects (see lib/webgl.js).
+  const canvas = hardwareCanvas({ alpha: true, premultipliedAlpha: false });
+  if (!canvas) return;
+  const renderer = new Renderer({ canvas, alpha: true, premultipliedAlpha: false });
   const gl = renderer.gl;
   gl.clearColor(0, 0, 0, 0);
   container.appendChild(gl.canvas);
@@ -336,12 +339,9 @@ const setupAnimation = () => {
 
     renderer.render({ scene: mesh });
   };
-  // Animate only while on (or near) screen and the tab is visible; no GPU: one still frame.
-  const still = isSoftwareRenderer(gl);
+  // Animate only while on (or near) screen and the tab is visible.
   const stopWatching = watchVisibility(container, (visible: boolean) => {
-    if (still) {
-      if (visible) renderer.render({ scene: mesh });
-    } else if (visible && !rafId) {
+    if (visible && !rafId) {
       lastTime = performance.now();
       rafId = requestAnimationFrame(update);
     } else if (!visible && rafId) {
@@ -361,11 +361,14 @@ const setupAnimation = () => {
   };
 };
 
+// Set up WebGL only once the effect comes near the screen (see lib/webgl.js).
+let cancelSetup = (): void => {};
 onMounted(() => {
-  setupAnimation();
+  if (ctnDom.value) cancelSetup = onceNear(ctnDom.value, setupAnimation);
 });
 
 onBeforeUnmount(() => {
+  cancelSetup();
   cleanupAnimation?.();
 });
 
