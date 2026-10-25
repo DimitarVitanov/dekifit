@@ -53,6 +53,8 @@ const emit = defineEmits<{
 const elRef = ref<SplitTextElement | null>(null);
 const fontsLoaded = ref(false);
 const animationCompleted = ref(false);
+// Hidden until split, so the plain text never flashes up before the letters animate in.
+const revealed = ref(false);
 
 // Stable callback ref so the animation closure never captures a stale prop value
 const onCompleteRef = ref(props.onLetterAnimationComplete);
@@ -75,7 +77,8 @@ const scrollTriggerStart = computed(() => {
 const elStyle = computed<CSSProperties>(() => ({
   textAlign: props.textAlign,
   wordWrap: 'break-word',
-  willChange: 'transform, opacity'
+  willChange: 'transform, opacity',
+  visibility: revealed.value ? undefined : 'hidden'
 }));
 
 // className prop is placed last so user styles always win over base styles
@@ -114,6 +117,7 @@ function initAnimation(): void {
 
   // Reduced motion: leave the plain, fully-readable text in place, no split/tween.
   if (prefersReducedMotion) {
+    revealed.value = true;
     animationCompleted.value = true;
     onCompleteRef.value?.();
     emit('animation-complete');
@@ -141,7 +145,8 @@ function initAnimation(): void {
       label.textContent = props.text;
       el.prepend(label);
       const targets = assignTargets(self);
-      return gsap.fromTo(
+      // fromTo puts the letters in their start state right away; only then show the element.
+      const tween = gsap.fromTo(
         targets,
         { ...props.from },
         {
@@ -169,13 +174,20 @@ function initAnimation(): void {
           force3D: true
         }
       );
+      revealed.value = true;
+      return tween;
     }
   });
 
   el._rbsplitInstance = splitInstance;
 }
 
+let revealFallback: ReturnType<typeof setTimeout> | undefined;
 onMounted(() => {
+  // Never leave text hidden if fonts or the split never come through.
+  revealFallback = setTimeout(() => {
+    revealed.value = true;
+  }, 3000);
   if (document.fonts.status === 'loaded') {
     fontsLoaded.value = true;
   } else {
@@ -206,6 +218,7 @@ watch(
 );
 
 onBeforeUnmount(() => {
+  clearTimeout(revealFallback);
   destroyInstance();
 });
 </script>

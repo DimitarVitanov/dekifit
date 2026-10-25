@@ -295,6 +295,9 @@ const setupWebGL = async (): Promise<void> => {
   canvas.style.width = '100%';
   canvas.style.height = '100%';
   canvas.style.display = 'block';
+  // The shader compiles after the page has painted; fade the streaks in rather than popping them in.
+  canvas.style.opacity = '0';
+  canvas.style.transition = 'opacity 600ms ease-out';
   container.appendChild(canvas);
 
   const { arr, count, avg } = prepColors(props.colors);
@@ -381,6 +384,7 @@ const setupWebGL = async (): Promise<void> => {
     canvas.addEventListener('pointermove', onPointerMove);
   }
 
+  let shown = false;
   const loop = (t: number): void => {
     rafRef.value = requestAnimationFrame(loop);
     uniforms.iTime.value = t * 0.001;
@@ -398,6 +402,10 @@ const setupWebGL = async (): Promise<void> => {
       lastTime = t;
     }
     draw();
+    if (!shown) {
+      shown = true;
+      canvas.style.opacity = '1';
+    }
   };
 
   // Animate only while on (or near) screen and the tab is visible.
