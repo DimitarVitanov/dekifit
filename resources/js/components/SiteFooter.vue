@@ -4,7 +4,7 @@
             <div class="grid grid-cols-1 md:grid-cols-4 gap-12">
                 <div class="md:col-span-1">
                     <Link href="/" class="flex items-center gap-3 group mb-6">
-                        <img src="/images/dekifit-logo.webp" alt="DekiFit logo" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-lg object-cover">
+                        <img src="/images/dekifit-logo-96.webp" srcset="/images/dekifit-logo-96.webp 96w, /images/dekifit-logo-192.webp 192w" sizes="40px" alt="DekiFit logo" width="40" height="40" loading="lazy" class="w-10 h-10 rounded-lg object-cover">
                         <span class="font-display text-xl text-off-white tracking-wide">DEKI<span class="text-emerald-400">FIT</span></span>
                     </Link>
                     <p class="text-text-body text-sm leading-relaxed">
@@ -13,7 +13,7 @@
                 </div>
                 
                 <div>
-                    <h4 class="text-emerald-400 text-xs uppercase tracking-[0.3em] font-semibold mb-6">Programs</h4>
+                    <h3 class="text-emerald-400 text-xs uppercase tracking-[0.3em] font-semibold mb-6">Programs</h3>
                     <ul class="space-y-3">
                         <li><Link href="/programs" class="text-text-body text-sm hover:text-emerald-400 transition-colors">Basic Package</Link></li>
                         <li><Link href="/programs" class="text-text-body text-sm hover:text-emerald-400 transition-colors">Pro Package</Link></li>
@@ -23,7 +23,7 @@
                 </div>
                 
                 <div>
-                    <h4 class="text-emerald-400 text-xs uppercase tracking-[0.3em] font-semibold mb-6">Company</h4>
+                    <h3 class="text-emerald-400 text-xs uppercase tracking-[0.3em] font-semibold mb-6">Company</h3>
                     <ul class="space-y-3">
                         <li><Link href="/about" class="text-text-body text-sm hover:text-emerald-400 transition-colors">About Dejan</Link></li>
                         <li><Link href="/contact" class="text-text-body text-sm hover:text-emerald-400 transition-colors">Contact</Link></li>
@@ -33,7 +33,7 @@
                 </div>
                 
                 <div>
-                    <h4 class="text-emerald-400 text-xs uppercase tracking-[0.3em] font-semibold mb-6">Get In Touch</h4>
+                    <h3 class="text-emerald-400 text-xs uppercase tracking-[0.3em] font-semibold mb-6">Get In Touch</h3>
                     <ul class="space-y-3">
                         <li><a href="mailto:badzukov.d@hotmail.com" class="text-text-body text-sm hover:text-emerald-400 transition-colors">badzukov.d@hotmail.com</a></li>
                         <li><a href="https://wa.me/38971271390" target="_blank" rel="noopener" class="text-text-body text-sm hover:text-emerald-400 transition-colors">071 271 390 (WhatsApp/Viber)</a></li>
@@ -55,6 +55,10 @@
                     </a>
                 </div>
             </div>
+
+            <p class="mt-6 text-center text-xs text-warm-grey">
+                Powered by <a href="https://nyxeon.io" target="_blank" rel="noopener" class="text-off-white hover:text-emerald-400 transition-colors">nyxeon.io</a>
+            </p>
         </div>
     </footer>
 </template>

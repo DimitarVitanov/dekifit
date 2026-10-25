@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Mesh, Program, Renderer, Triangle, Vec3 } from 'ogl';
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue';
+import { isSoftwareRenderer, watchVisibility } from '@/lib/webgl';
 
 interface OrbProps {
   hue?: number;
@@ -315,7 +316,7 @@ const setupAnimation = () => {
   container.addEventListener('mousemove', handleMouseMove);
   container.addEventListener('mouseleave', handleMouseLeave);
 
-  let rafId: number;
+  let rafId = 0;
   const update = (t: number) => {
     rafId = requestAnimationFrame(update);
     const dt = (t - lastTime) * 0.001;
@@ -335,9 +336,22 @@ const setupAnimation = () => {
 
     renderer.render({ scene: mesh });
   };
-  rafId = requestAnimationFrame(update);
+  // Animate only while on (or near) screen and the tab is visible; no GPU: one still frame.
+  const still = isSoftwareRenderer(gl);
+  const stopWatching = watchVisibility(container, (visible: boolean) => {
+    if (still) {
+      if (visible) renderer.render({ scene: mesh });
+    } else if (visible && !rafId) {
+      lastTime = performance.now();
+      rafId = requestAnimationFrame(update);
+    } else if (!visible && rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = 0;
+    }
+  });
 
   cleanupAnimation = () => {
+    stopWatching();
     cancelAnimationFrame(rafId);
     window.removeEventListener('resize', resize);
     container.removeEventListener('mousemove', handleMouseMove);

@@ -5,6 +5,7 @@
 <script setup lang="ts">
 import { Camera, Geometry, Mesh, Program, Renderer } from 'ogl';
 import { onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { isSoftwareRenderer, watchVisibility } from '@/lib/webgl';
 
 interface ParticlesProps {
   particleCount?: number;
@@ -198,7 +199,7 @@ const init = () => {
 
   const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
 
-  let animationFrameId: number;
+  let animationFrameId = 0;
   let lastTime = performance.now();
   let elapsed = 0;
 
@@ -227,9 +228,22 @@ const init = () => {
     renderer.render({ scene: particles, camera });
   };
 
-  animationFrameId = requestAnimationFrame(update);
+  // Animate only while on (or near) screen and the tab is visible; no GPU: one still frame.
+  const still = isSoftwareRenderer(gl);
+  const stopWatching = watchVisibility(container, (visible: boolean) => {
+    if (still) {
+      if (visible) renderer.render({ scene: particles, camera });
+    } else if (visible && !animationFrameId) {
+      lastTime = performance.now();
+      animationFrameId = requestAnimationFrame(update);
+    } else if (!visible && animationFrameId) {
+      cancelAnimationFrame(animationFrameId);
+      animationFrameId = 0;
+    }
+  });
 
   cleanup = () => {
+    stopWatching();
     window.removeEventListener('resize', resize);
     if (props.moveParticlesOnHover) {
       container.removeEventListener('mousemove', handleMouseMove);

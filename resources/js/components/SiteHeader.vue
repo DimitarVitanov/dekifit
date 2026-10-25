@@ -2,7 +2,7 @@
     <header class="fixed top-0 left-0 right-0 z-50 transition-all duration-500" :class="scrolled ? 'bg-dark/95 backdrop-blur-xl border-b border-emerald-500/10' : ''">
         <nav class="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
             <Link href="/" class="flex items-center gap-3 group">
-                <img src="/images/dekifit-logo.webp" alt="DekiFit logo" width="44" height="44" class="w-11 h-11 rounded-lg object-cover glow-emerald group-hover:glow-emerald-strong transition-all duration-300" fetchpriority="high">
+                <img src="/images/dekifit-logo-96.webp" srcset="/images/dekifit-logo-96.webp 96w, /images/dekifit-logo-192.webp 192w" sizes="44px" alt="DekiFit logo" width="44" height="44" class="w-11 h-11 rounded-lg object-cover glow-emerald group-hover:glow-emerald-strong transition-all duration-300" fetchpriority="high">
                 <span class="font-display text-xl text-off-white tracking-wide group-hover:text-emerald-400 transition-colors">DEKI<span class="text-emerald-400">FIT</span></span>
             </Link>
             
@@ -25,7 +25,7 @@
                 <Link href="/programs" class="hidden sm:inline-flex px-6 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-black text-xs tracking-[0.2em] uppercase font-bold rounded-lg hover:from-emerald-400 hover:to-emerald-500 transition-all duration-300 glow-emerald hover:glow-emerald-strong">
                     Get Started
                 </Link>
-                <button @click="mobileOpen = !mobileOpen" class="md:hidden text-off-white p-2">
+                <button @click="mobileOpen = !mobileOpen" class="md:hidden text-off-white p-2" :aria-label="mobileOpen ? 'Close menu' : 'Open menu'" :aria-expanded="mobileOpen">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path v-if="!mobileOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

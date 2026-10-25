@@ -5,7 +5,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 // stop on hover, focus or pause, can be dragged/swiped (with momentum) or stepped with the
 // buttons, and a tap opens the card full screen. Portrait collages are 9:16 cards; the landscape
 // one is wider. Faces are blurred in the files themselves, so the originals never ship.
-// Files: public/images/transformations/transformation-N-{480,960}.webp
+// Files: public/images/transformations/transformation-N-{320,480,960}.webp
 const props = defineProps({
     photos: { type: Array, required: true }, // [{ src: '/images/…/transformation-1', width, height }]
 });
@@ -273,7 +273,7 @@ onBeforeUnmount(() => {
             >
                 <img
                     :src="`${card.photo.src}-480.webp`"
-                    :srcset="`${card.photo.src}-480.webp 480w, ${card.photo.src}-960.webp 960w`"
+                    :srcset="`${card.photo.src}-320.webp 320w, ${card.photo.src}-480.webp 480w, ${card.photo.src}-960.webp 960w`"
                     :sizes="sizes(card.photo)"
                     :width="card.photo.width"
                     :height="card.photo.height"

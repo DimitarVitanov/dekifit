@@ -27,7 +27,7 @@ function useDemo(login) {
 
         <div class="page-enter relative w-full max-w-md">
             <Link href="/" class="flex flex-col items-center gap-4 mb-8">
-                <img src="/images/dekifit-logo.webp" alt="DekiFit" width="72" height="72" class="w-18 h-18 rounded-2xl object-cover glow-emerald">
+                <img src="/images/dekifit-logo-144.webp" srcset="/images/dekifit-logo-144.webp 144w, /images/dekifit-logo.webp 512w" sizes="72px" alt="DekiFit" width="72" height="72" class="w-18 h-18 rounded-2xl object-cover glow-emerald">
                 <span class="font-display text-2xl tracking-wide text-off-white">DEKI<span class="text-gold-400">FIT</span></span>
             </Link>
 

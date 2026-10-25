@@ -63,7 +63,7 @@ const logout = () => router.post('/logout');
         <!-- Desktop sidebar -->
         <aside class="hidden lg:flex fixed inset-y-0 left-0 w-64 flex-col bg-dark-warm border-r border-white/5">
             <Link href="/" class="flex items-center gap-3 px-6 h-20">
-                <img src="/images/dekifit-logo.webp" alt="" width="40" height="40" class="w-10 h-10 rounded-xl object-cover">
+                <img src="/images/dekifit-logo-96.webp" srcset="/images/dekifit-logo-96.webp 96w, /images/dekifit-logo-192.webp 192w" sizes="40px" alt="" width="40" height="40" class="w-10 h-10 rounded-xl object-cover">
                 <span class="font-display text-xl tracking-wide">DEKI<span class="text-gold-400">FIT</span></span>
             </Link>
 
@@ -101,7 +101,7 @@ const logout = () => router.post('/logout');
         <!-- Mobile top bar -->
         <header class="lg:hidden sticky top-0 z-30 flex items-center justify-between gap-3 px-4 h-14 bg-dark/90 backdrop-blur-xl border-b border-white/5">
             <Link href="/" class="flex items-center gap-2.5">
-                <img src="/images/dekifit-logo.webp" alt="" width="32" height="32" class="w-8 h-8 rounded-lg object-cover">
+                <img src="/images/dekifit-logo-96.webp" srcset="/images/dekifit-logo-96.webp 96w, /images/dekifit-logo-192.webp 192w" sizes="32px" alt="" width="32" height="32" class="w-8 h-8 rounded-lg object-cover">
                 <span class="font-display text-lg tracking-wide">DEKI<span class="text-gold-400">FIT</span></span>
             </Link>
             <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gold-400 to-gold-600 text-black text-[11px] font-bold flex items-center justify-center">{{ initials(user.name) }}</div>

@@ -133,6 +133,13 @@ function initAnimation(): void {
     charsClass: 'split-char',
     reduceWhiteSpace: false,
     onSplit: (self: GSAPSplitText) => {
+      // GSAP labels the element itself (aria-label isn't allowed on p/span) and hides the
+      // pieces from screen readers; give them a visually hidden copy of the text instead.
+      el.removeAttribute('aria-label');
+      const label = document.createElement('span');
+      label.className = 'sr-only';
+      label.textContent = props.text;
+      el.prepend(label);
       const targets = assignTargets(self);
       return gsap.fromTo(
         targets,

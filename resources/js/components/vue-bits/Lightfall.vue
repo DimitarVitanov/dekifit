@@ -8,7 +8,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch, useTemplateRef, nextTick, type CSSProperties } from 'vue';
-import { Renderer, Program, Mesh, Triangle } from 'ogl';
+import { Renderer, Mesh, Triangle } from 'ogl';
+import { ParallelProgram, afterPaint, isSoftwareRenderer, watchVisibility, whenSettledAndVisible } from '@/lib/webgl';
 
 interface LightfallProps {
   className?: string;
@@ -266,7 +267,11 @@ const cleanupRef = ref<(() => void) | null>(null);
 const mouseTarget: [number, number] = [0, 0];
 let lastTime = 0;
 
+// Bumped on every setup/teardown, so a setup still waiting on its shader can tell it's stale.
+let generation = 0;
+
 const setupWebGL = async (): Promise<void> => {
+  const current = ++generation;
   if (!containerRef.value) return;
   await nextTick();
   if (!containerRef.value) return;
@@ -276,10 +281,23 @@ const setupWebGL = async (): Promise<void> => {
   const renderer = new Renderer({
     dpr: props.dpr ?? (typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1),
     alpha: true,
-    antialias: true
+    // A single full-screen triangle has no visible edges, so MSAA only cost GPU time.
+    antialias: false
   });
   rendererRef.value = renderer;
   const gl = renderer.gl;
+  // No GPU: draw one still frame instead of animating (see lib/webgl.js). Without a GPU there's
+  // also no background compiling, and this shader would freeze the page for seconds, so wait
+  // until the page has loaded and settled, and the background is actually on screen.
+  const still = isSoftwareRenderer(gl);
+  if (still) {
+    renderer.dpr = 1;
+    await whenSettledAndVisible(container);
+    if (current !== generation) {
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      return;
+    }
+  }
   const canvas = gl.canvas as HTMLCanvasElement;
   canvas.style.width = '100%';
   canvas.style.height = '100%';
@@ -319,7 +337,15 @@ const setupWebGL = async (): Promise<void> => {
   };
   uniformsRef.value = uniforms;
 
-  const program = new Program(gl, { vertex, fragment, uniforms });
+  // Compiles off the main thread (see lib/webgl.js); nothing draws until it's ready.
+  const program = new ParallelProgram(gl, { vertex, fragment, uniforms });
+  await program.ready;
+  if (current !== generation) {
+    // Unmounted or re-created while compiling.
+    canvas.remove();
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return;
+  }
   programRef.value = program;
 
   const geometry = new Triangle(gl);
@@ -327,10 +353,22 @@ const setupWebGL = async (): Promise<void> => {
   const mesh = new Mesh(gl, { geometry, program });
   meshRef.value = mesh;
 
+  const draw = (): void => {
+    if (!props.paused && programRef.value && meshRef.value) {
+      try {
+        renderer.render({ scene: meshRef.value });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
   const resize = (): void => {
     const rect = container.getBoundingClientRect();
     renderer.setSize(rect.width, rect.height);
     uniforms.iResolution.value = [gl.drawingBufferWidth, gl.drawingBufferHeight, 1];
+    // Resizing clears the canvas, and a still frame has no loop to repaint it.
+    if (still) draw();
   };
 
   resize();
@@ -368,17 +406,28 @@ const setupWebGL = async (): Promise<void> => {
     } else {
       lastTime = t;
     }
-    if (!props.paused && programRef.value && meshRef.value) {
-      try {
-        renderer.render({ scene: meshRef.value });
-      } catch (e) {
-        console.error(e);
-      }
-    }
+    draw();
   };
-  rafRef.value = requestAnimationFrame(loop);
+
+  // Animate only while on (or near) screen and the tab is visible.
+  let stopWatching = (): void => {};
+  if (still) {
+    uniforms.iTime.value = performance.now() * 0.001;
+    draw();
+  } else {
+    stopWatching = watchVisibility(container, (visible: boolean) => {
+      if (visible && rafRef.value === null) {
+        rafRef.value = requestAnimationFrame(loop);
+      } else if (!visible && rafRef.value !== null) {
+        cancelAnimationFrame(rafRef.value);
+        rafRef.value = null;
+        lastTime = 0;
+      }
+    });
+  }
 
   cleanupRef.value = (): void => {
+    stopWatching();
     if (rafRef.value) cancelAnimationFrame(rafRef.value);
     rafRef.value = null;
     canvas.removeEventListener('pointermove', onPointerMove);
@@ -406,17 +455,21 @@ const setupWebGL = async (): Promise<void> => {
 };
 
 const teardown = (): void => {
+  generation++;
   if (cleanupRef.value) {
     cleanupRef.value();
     cleanupRef.value = null;
   }
 };
 
+// Set up after the first paint so compiling the shader never holds back the page's text.
+let cancelSetup = (): void => {};
 onMounted(() => {
-  setupWebGL();
+  cancelSetup = afterPaint(setupWebGL);
 });
 
 onUnmounted(() => {
+  cancelSetup();
   teardown();
 });
 
