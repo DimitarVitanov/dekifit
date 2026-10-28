@@ -55,7 +55,7 @@
                     <section>
                         <h2 class="font-display text-2xl text-emerald-400 mb-4">7. Contact</h2>
                         <p class="text-text-body leading-relaxed">
-                            For questions about these Terms of Service, please contact us at badzukov.d@hotmail.com.
+                            For questions about these Terms of Service, please contact us at dbadzukov@gmail.com.
                         </p>
                     </section>
                 </div>

@@ -3,7 +3,7 @@
 return [
 
     // Where order and contact-form notifications go (the coach's inbox).
-    'admin_email' => env('ADMIN_EMAIL', 'badzukov.d@hotmail.com'),
+    'admin_email' => env('ADMIN_EMAIL', 'dbadzukov@gmail.com'),
 
     'whatsapp' => '+389 71 271 390',
     'whatsapp_url' => 'https://wa.me/38971271390',

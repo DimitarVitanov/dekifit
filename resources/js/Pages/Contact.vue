@@ -137,7 +137,7 @@
                             </div>
                             <div>
                                 <h3 class="text-off-white font-semibold mb-1">Email</h3>
-                                <a href="mailto:badzukov.d@hotmail.com" class="text-text-body hover:text-emerald-400 transition-colors">badzukov.d@hotmail.com</a>
+                                <a href="mailto:dbadzukov@gmail.com" class="text-text-body hover:text-emerald-400 transition-colors">dbadzukov@gmail.com</a>
                                 <p class="text-warm-grey text-sm mt-1">I respond within 24 hours</p>
                             </div>
                         </div>

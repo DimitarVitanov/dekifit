@@ -49,7 +49,7 @@
                     <section>
                         <h2 class="font-display text-2xl text-emerald-400 mb-4">6. Contact Us</h2>
                         <p class="text-text-body leading-relaxed">
-                            If you have any questions about this Privacy Policy, please contact us at badzukov.d@hotmail.com.
+                            If you have any questions about this Privacy Policy, please contact us at dbadzukov@gmail.com.
                         </p>
                     </section>
                 </div>

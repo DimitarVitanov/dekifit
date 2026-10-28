@@ -35,7 +35,7 @@
                 <div>
                     <h3 class="text-emerald-400 text-xs uppercase tracking-[0.3em] font-semibold mb-6">Get In Touch</h3>
                     <ul class="space-y-3">
-                        <li><a href="mailto:badzukov.d@hotmail.com" class="text-text-body text-sm hover:text-emerald-400 transition-colors">badzukov.d@hotmail.com</a></li>
+                        <li><a href="mailto:dbadzukov@gmail.com" class="text-text-body text-sm hover:text-emerald-400 transition-colors">dbadzukov@gmail.com</a></li>
                         <li><a href="https://wa.me/38971271390" target="_blank" rel="noopener" class="text-text-body text-sm hover:text-emerald-400 transition-colors">071 271 390 (WhatsApp/Viber)</a></li>
                     </ul>
                 </div>
