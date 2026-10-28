@@ -50,6 +50,13 @@ watch(() => page.url, () => { moreOpen.value = false; });
 watch(flash, () => { dismissed.value = false; });
 
 const logout = () => router.post('/logout');
+
+const resending = ref(false);
+const resendVerification = () => router.post('/email/verification-notification', {}, {
+    preserveScroll: true,
+    onStart: () => { resending.value = true; },
+    onFinish: () => { resending.value = false; },
+});
 </script>
 
 <template>
@@ -121,6 +128,16 @@ const logout = () => router.post('/logout');
                 <span class="flex-1">You're still using the password we emailed you. Set your own to keep your account safe.</span>
                 <Icon name="arrow" class="w-4 h-4 flex-shrink-0" />
             </Link>
+
+            <div v-if="!user.is_admin && user.email_verified === false" class="mb-6 flex flex-col sm:flex-row sm:items-center gap-3 px-4 py-3 rounded-xl border border-gold-500/20 bg-gold-500/10 text-sm text-gold-100">
+                <div class="flex items-start gap-3 flex-1 min-w-0">
+                    <Icon name="bell" class="w-5 h-5 flex-shrink-0 mt-px text-gold-400" />
+                    <span>Please confirm your email address (<span class="break-all">{{ user.email }}</span>) so password resets and messages from your coach reach you. Use the link we emailed you.</span>
+                </div>
+                <button type="button" class="self-start sm:self-auto flex-shrink-0 px-3 py-1.5 rounded-lg border border-gold-500/40 text-xs font-semibold uppercase tracking-wider text-gold-300 hover:bg-gold-500/10 transition-colors disabled:opacity-50" :disabled="resending" @click="resendVerification">
+                    {{ resending ? 'Sending…' : 'Resend link' }}
+                </button>
+            </div>
 
             <slot />
         </main>

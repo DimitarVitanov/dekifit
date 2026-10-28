@@ -1,7 +1,10 @@
 <script setup>
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { computed } from 'vue';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 
 defineProps({ demoLogins: { type: Array, default: () => [] } });
+
+const flash = computed(() => usePage().props.flash ?? {});
 
 const form = useForm({ email: '', password: '', remember: true });
 
@@ -36,6 +39,10 @@ function useDemo(login) {
                 <h1 class="font-display text-3xl uppercase text-off-white mb-2">Welcome back</h1>
                 <p class="text-text-body text-sm mb-8">Log in with the details we emailed you when your payment was confirmed.</p>
 
+                <div v-if="flash.success || flash.error" class="mb-6 px-4 py-3 rounded-xl border text-sm" :class="flash.error ? 'bg-red-500/10 border-red-500/20 text-red-200' : 'bg-green-500/10 border-green-500/20 text-green-200'" role="status">
+                    {{ flash.error || flash.success }}
+                </div>
+
                 <div class="space-y-5">
                     <div>
                         <label for="email" class="p-label">Email</label>
@@ -43,7 +50,10 @@ function useDemo(login) {
                         <p v-if="form.errors.email" class="p-error">{{ form.errors.email }}</p>
                     </div>
                     <div>
-                        <label for="password" class="p-label">Password</label>
+                        <div class="flex items-baseline justify-between gap-4">
+                            <label for="password" class="p-label">Password</label>
+                            <Link href="/forgot-password" class="text-xs font-semibold text-gold-400 hover:text-gold-300">Forgot password?</Link>
+                        </div>
                         <input id="password" v-model="form.password" type="password" required autocomplete="current-password" class="p-input">
                         <p v-if="form.errors.password" class="p-error">{{ form.errors.password }}</p>
                     </div>

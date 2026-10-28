@@ -6,7 +6,9 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Portal;
 use Illuminate\Support\Facades\Route;
 
@@ -16,19 +18,28 @@ Route::get('/nutrition', [PageController::class, 'nutrition'])->name('nutrition'
 Route::get('/about', [PageController::class, 'about'])->name('about');
 Route::get('/contact', [PageController::class, 'contact'])->name('contact');
 Route::get('/checkout', [OrderController::class, 'create'])->name('checkout');
-Route::post('/checkout', [OrderController::class, 'store'])->name('checkout.store');
+Route::post('/checkout', [OrderController::class, 'store'])->middleware('throttle:6,1')->name('checkout.store');
 Route::get('/privacy-policy', [PageController::class, 'privacyPolicy'])->name('privacy-policy');
 Route::get('/terms-of-service', [PageController::class, 'termsOfService'])->name('terms-of-service');
 Route::get('/sitemap.xml', [SitemapController::class, 'index'])->name('sitemap');
 
-Route::post('/contact', [FormController::class, 'submitContact'])->name('contact.submit');
+Route::post('/contact', [FormController::class, 'submitContact'])->middleware('throttle:6,1')->name('contact.submit');
 
 // Client login (accounts are created by the coach when a payment is confirmed).
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:6,1')->name('login.store');
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'store'])->middleware('throttle:6,1')->name('password.email');
+    Route::get('/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:6,1')->name('password.store');
 });
 Route::post('/logout', [LoginController::class, 'destroy'])->middleware('auth')->name('logout');
+
+// Email confirmation: the signed link works logged in or out; resending needs a login.
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])->middleware('throttle:6,1')->name('verification.verify');
+Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
 // Hosted exercise clips are not in public/, so these URLs reach Laravel and are access-checked.
 Route::get('/videos/exercises/{file}', ExerciseVideoFileController::class)

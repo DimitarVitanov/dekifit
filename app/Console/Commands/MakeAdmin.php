@@ -22,6 +22,7 @@ class MakeAdmin extends Command
             'password' => $password,
             'is_admin' => true,
             'must_change_password' => false,
+            'email_verified_at' => $user->email_verified_at ?? now(),
         ])->save();
 
         $this->info("Admin ready: {$user->email}");

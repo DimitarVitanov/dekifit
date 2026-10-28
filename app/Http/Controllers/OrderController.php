@@ -3,11 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Mail\NewOrderNotification;
+use App\Mail\OrderReceived;
 use App\Models\Order;
 use App\Models\Program;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
+
+use function Illuminate\Support\defer;
 
 class OrderController extends Controller
 {
@@ -42,13 +45,11 @@ class OrderController extends Controller
 
         $order = Order::create($validated);
 
-        $adminEmail = env('ADMIN_EMAIL', 'badzukov.d@hotmail.com');
-
-        try {
-            Mail::to($adminEmail)->send(new NewOrderNotification($order));
-        } catch (\Throwable $e) {
-            report($e);
-        }
+        // Sent after the response, so checkout isn't kept waiting on the mail server.
+        defer(function () use ($order) {
+            rescue(fn () => Mail::to(config('dekifit.admin_email'))->send(new NewOrderNotification($order)));
+            rescue(fn () => Mail::to($order->email, $order->name)->send(new OrderReceived($order)));
+        });
 
         return Inertia::render('CheckoutThankYou', [
             'order' => $order,

@@ -115,4 +115,14 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    // Branded DekiFit look for every Markdown email, including password resets
+    // and email confirmations (resources/views/vendor/mail).
+    'markdown' => [
+        'theme' => env('MAIL_MARKDOWN_THEME', 'dekifit'),
+
+        'paths' => [
+            resource_path('views/vendor/mail'),
+        ],
+    ],
+
 ];

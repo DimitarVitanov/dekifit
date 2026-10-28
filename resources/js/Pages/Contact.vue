@@ -43,6 +43,11 @@
                     </div>
                     
                     <form @submit.prevent="submit" class="space-y-6">
+                        <!-- Spam trap: hidden from people, filled in by bots. -->
+                        <div class="absolute -left-[9999px] w-px h-px overflow-hidden" aria-hidden="true">
+                            <label for="contact_website">Website</label>
+                            <input id="contact_website" v-model="form.contact_website" type="text" name="contact_website" tabindex="-1" autocomplete="off">
+                        </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                             <div>
                                 <label for="name" class="block text-sm text-warm-grey mb-2">Name *</label>
@@ -198,6 +203,7 @@ const form = useForm({
     phone: '',
     subject: '',
     message: '',
+    contact_website: '',
 });
 
 function submit() {

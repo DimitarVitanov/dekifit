@@ -1,5 +1,6 @@
 // Coach's bank account for package payments, as on UNIBank's "International payments in
 // foreign currency" sheet. Packages are priced and paid in euros (EUR).
+// The order emails read the same details from config/dekifit.php; keep the two in sync.
 export const bank = {
     beneficiary: 'Dejan Badjukov',
     address: 'Bul. Marshal Tito 5/4-7, Strumica, North Macedonia',
